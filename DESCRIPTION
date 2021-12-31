@@ -1,7 +1,7 @@
 Package: GwasLocusScores
 Type: Package
 Title: GwasLocusScores
-Version: 1.0.6
+Version: 1.0.7
 Date: 2021-12-30
 Author: Paul Shannon
 Maintainer: Paul Shannon<pshannon@systemsbiology.org>
@@ -11,7 +11,7 @@ Imports:
    RPostgreSQL,
    trena
 Description: score multiple associations between gwas locus and target genes
-Depends: R (>= 4.1.0), R6, GenomicRanges, igvR
+Depends: R (>= 4.1.0), R6, GenomicRanges
 License: MIT
 Encoding: UTF-8
 RoxygenNote: 7.1.2
