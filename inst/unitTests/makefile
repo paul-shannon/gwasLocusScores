@@ -1,2 +1,2 @@
 default:
-	R -f test_gwasLocusScores.R
+	R -f test_GwasLocusScores.R
