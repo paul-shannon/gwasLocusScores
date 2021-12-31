@@ -119,7 +119,11 @@ extract all previously obtained eQTLs at or aboce the specified pvalue threshold
 \subsection{Method \code{breakMotifsAtEQTLs()}}{
 discover which motifs are broken by the eQTL variants, for specified gene and pval
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{GwasLocusScores$breakMotifsAtEQTLs(targetGene, pvalue.cutoff = NA)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{GwasLocusScores$breakMotifsAtEQTLs(
+  targetGene,
+  pvalue.cutoff = NA,
+  TFs.preselected = NA
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -128,6 +132,8 @@ discover which motifs are broken by the eQTL variants, for specified gene and pv
 \item{\code{targetGene}}{character, a gene symbol in the eQTL table}
 
 \item{\code{pvalue.cutoff}}{numeric, e.g., 1e-4}
+
+\item{\code{TFs.preselected}}{character, e.g., c("SOX21", "ZEB1")}
 }
 \if{html}{\out{</div>}}
 }
