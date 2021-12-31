@@ -1,0 +1,68 @@
+suppressPackageStartupMessages({
+    library(GwasLocusScores)
+    library(TrenaProjectAD)
+    library(EndophenotypeExplorer)
+    })
+#----------------------------------------------------------------------------------------------------
+tbl.tagHap <- read.table("~/github/ADvariantExplorer/explore/adamts4-study/haploreg-rs4575098-0.2.tsv",
+                          sep="\t", as.is=TRUE, header=TRUE)
+region.chrom <- tbl.tagHap$chrom[1]
+region.start <- min(tbl.tagHap$hg38) - 1000
+region.end <- max(tbl.tagHap$hg38) + 1000
+tag.snp.loc <- 161185602
+tpad <- TrenaProjectAD()
+#----------------------------------------------------------------------------------------------------
+scoreTargetGeneInTissue <- function(targetGene, tag.snp, tbl.fimo, tbl.oc, gtex.tissue)
+{
+   gls <- GwasLocusScores$new("rs4575096", region.chrom, region.start, region.end,
+                              tissue.name=gtex.tissue,
+                              targetGene=targetGene)
+
+   etx <- EndophenotypeExplorer$new(targetGene, "hg38")
+   mtx.rna <- etx$get.rna.matrix(gtex.tissue)
+   dim(mtx.rna)
+
+   #tbl.fimo.small <- get(load("~/github/gwasLocusScores/inst/extdata/tbl.fimo.ndufs2.small.RData"))
+   # data.dir <- "~/github/TrenaProjectAD/inst/extdata/genomicRegions"
+   # filename <- "boca-hg38-consensus-ATAC.RData"
+   # tbl.boca <- get(load(file.path(data.dir, filename)))
+
+   browser()
+   tbl.tms <- gls$createTrenaMultiScoreTable(tpad,  tbl.fimo, tbl.oc, mtx.rna)
+   tbl.tms.strong <- subset(tbl.tms, (chip | oc) & abs(cor.all) > 0.2 & fimo_pvalue < 1e-4)
+   tfs <- unique(tbl.tms.strong$tf)
+   length(tfs)
+
+   tbl.trena <- gls$runTrena(tfs, mtx.rna, tbl.tms.strong)
+   tbl.trena$rfNorm <- tbl.trena$rfScore / max(tbl.trena$rfScore)
+   dim(tbl.tms.strong)
+   top.tfs <- tbl.trena$gene [1:20]
+   tbl.tms.stronger <- subset(tbl.tms.strong, tf %in% top.tfs)
+   dim(tbl.tms.stronger)
+
+   tbl.eqtl <- gls$get.tbl.eqtl(1e-4)
+   if(is.null(tbl.eqtl)){
+      gls$load.eqtls()
+      tbl.eqtl <- gls$get.tbl.eqtl(1e-4)
+      }
+
+   printf("starting motifbreakR...")
+   x <- system.time(tbl.breaks <- gls$breakMotifsAtEQTLs(targetGene, pvalue.cutoff=1e-4))
+   print(x[["elapsed"]])
+   #tbl.breaks <- get(load("~/github/gwasLocusScores/inst/unitTests/tbl.breaks.fromTest.RData"))
+
+
+  tbl.trena.scored <- gls$scoreEQTLs(tbl.trena, tbl.breaks, tbl.eqtl)
+  return(tbl.trena.scored)
+
+} # scoreTargetGeneInTissue
+#----------------------------------------------------------------------------------------------------
+tbl.fimo <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.NDUFS2.RData"))
+tbl.fimo <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.PPOX.RData"))
+tbl.fimo.ppox <- subset(tbl.fimo, start > region.start & end < region.end)
+data.dir <- "~/github/TrenaProjectAD/inst/extdata/genomicRegions"
+filename <- "boca-hg38-consensus-ATAC.RData"
+tbl.boca <- get(load(file.path(data.dir, filename)))
+tissue <- "GTEx_V8.Brain_Hippocampus"
+targetGene <- "PPOX"
+tbl.trena.scored <- scoreTargetGeneInTissue(targetGene, "rs4575098", tbl.fimo.ppox, tbl.boca, tissue)
