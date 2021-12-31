@@ -4,7 +4,6 @@
 
 #' @import R6
 #' @import rtracklayer
-#' @import igvR
 #' @import TrenaMultiScore
 #' @import TrenaProjectAD
 #' @import EndophenotypeExplorer
@@ -22,7 +21,6 @@
 #' @examples
 #'   gls <- GwasLocusScores("rs4575096")
 #' @export
-#----------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------
 GwasLocusScores = R6Class("GwasLocusScores",
  #--------------------------------------------------------------------------------
