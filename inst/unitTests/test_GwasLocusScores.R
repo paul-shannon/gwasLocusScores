@@ -68,7 +68,8 @@ test_breakMotifs <- function()
                                targetGene="NDUFS2")
 
     gls$load.eqtls()
-    tbl.eqtl <- gls$get.tbl.eqtl(pvalue.cutoff=11)
+    tbl.eqtl <- gls$get.tbl.eqtl(pvalue.cutoff=1)
+    dim(tbl.eqtl)
     targetGene <- "NDUFS2"
     pval.cutoff <- 1.22e-5
     tbl.sub <- subset(tbl.eqtl, pvalue <= pval.cutoff & gene==targetGene)
@@ -76,12 +77,14 @@ test_breakMotifs <- function()
     dim(tbl.sub)
     checkTrue(nrow(tbl.sub) > 2)
 
-    x <- system.time(tbl.breaks <- gls$breakMotifsAtEQTLs(targetGene, pval.cutoff))
+    tfs.oi.for.speed <- c("SOX21", "ZEB1")  # rather than the full > 500 from MotifDb
+    x <- system.time(tbl.breaks <- gls$breakMotifsAtEQTLs(targetGene, pval.cutoff,
+                                                          TFs.preselected=tfs.oi.for.speed))
     message(sprintf("%4.1f minutes to break %d snps", round(x[["elapsed"]]/60, digits=1),
                     length(snps)))
     checkEquals(length(unique(tbl.breaks$SNP_id)), length(snps))
-    checkTrue(nrow(subset(tbl.breaks, abs(pctDelta) > 0.25)) > 2)
-    save(tbl.breaks, file="tbl.breaks.fromTest.RData")
+    checkTrue(nrow(subset(tbl.breaks, abs(pctDelta) > 0.10)) >= 2)
+    # older, longer version is better.  was "save(tbl.breaks, file="tbl.breaks.fromTest.RData")"
 
 } # test_breakMotifs
 #----------------------------------------------------------------------------------------------------

@@ -107,8 +107,10 @@ GwasLocusScores = R6Class("GwasLocusScores",
          #'
          #' @param targetGene character, a gene symbol in the eQTL table
          #' @param pvalue.cutoff numeric, e.g., 1e-4
+         #' @param TFs.preselected character, e.g., c("SOX21", "ZEB1")
          #' @returns a data.frame
-      breakMotifsAtEQTLs = function(targetGene, pvalue.cutoff=NA){
+      breakMotifsAtEQTLs = function(targetGene, pvalue.cutoff=NA, TFs.preselected=NA){
+         printf("--- starting motifbreakR")
          if(is.null(private$tbl.eqtl))
              self$load.eqtls()
          tbl.sub <- subset(private$tbl.eqtl, gene==targetGene)
@@ -116,10 +118,17 @@ GwasLocusScores = R6Class("GwasLocusScores",
              tbl.sub <- subset(tbl.sub, pvalue <= pvalue.cutoff)
          rsids <- tbl.sub$rsid
          motifs.selected <- query(MotifDb, "sapiens", c("jaspar2018", "hocomoco-core-A"))
+         if(!all(is.na(TFs.preselected))){
+            motifs.selected <- query(motifs.selected, andStrings="sapiens", orStrings=TFs.preselected)
+            }
+         message(sprintf("--- breakMotifsAtEQTLs, creating snps.gr for %d variants", length(rsids)))
          snps.gr <- snps.from.rsid(rsid = rsids,
                               dbSNP=SNPlocs.Hsapiens.dbSNP151.GRCh38,
                               search.genome=BSgenome.Hsapiens.UCSC.hg38)
-         bpparam <- MulticoreParam(workers=4)
+
+         available.workers <- multicoreWorkers()
+         printf("--- starting motifbreakR on %d eQTLs with %d workers", length(snps.gr), available.workers)
+         bpparam <- MulticoreParam(workers=available.workers)
          private$motifbreakR.results <- motifbreakR(snpList = snps.gr,
                                                     filterp = TRUE,
                                                     pwmList = motifs.selected,
