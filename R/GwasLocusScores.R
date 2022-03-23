@@ -121,6 +121,7 @@ GwasLocusScores = R6Class("GwasLocusScores",
          if(!all(is.na(TFs.preselected))){
             motifs.selected <- query(motifs.selected, andStrings="sapiens", orStrings=TFs.preselected)
             }
+         if(length(rsids) == 0) browser()
          message(sprintf("--- breakMotifsAtEQTLs, creating snps.gr for %d variants", length(rsids)))
          snps.gr <- snps.from.rsid(rsid = rsids,
                               dbSNP=SNPlocs.Hsapiens.dbSNP151.GRCh38,

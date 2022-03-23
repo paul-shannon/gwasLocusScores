@@ -46,7 +46,7 @@ scoreTargetGeneInTissue <- function(targetGene, tag.snp, tbl.fimo, tbl.oc, gtex.
       }
 
    printf("starting motifbreakR...")
-   x <- system.time(tbl.breaks <- gls$breakMotifsAtEQTLs(targetGene, pvalue.cutoff=1e-4))
+   x <- system.time(tbl.breaks <- gls$breakMotifsAtEQTLs(targetGene, pvalue.cutoff=1e-2))
    print(x[["elapsed"]])
    #tbl.breaks <- get(load("~/github/gwasLocusScores/inst/unitTests/tbl.breaks.fromTest.RData"))
 
@@ -60,12 +60,35 @@ scoreTargetGeneInTissue <- function(targetGene, tag.snp, tbl.fimo, tbl.oc, gtex.
 
 } # scoreTargetGeneInTissue
 #----------------------------------------------------------------------------------------------------
-tbl.fimo.ndufs2 <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.NDUFS2.RData"))
+# <<<<<<< HEAD
+#tbl.fimo.ndufs2 <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.NDUFS2.RData"))
+##tbl.fimo <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.PPOX.RData"))
+#tbl.fimo.ppox <- subset(tbl.fimo, start > region.start & end < region.end)
+#data.dir <- "~/github/TrenaProjectAD/inst/extdata/genomicRegions"
+#filename <- "boca-hg38-consensus-ATAC.RData"
+#tbl.boca <- get(load(file.path(data.dir, filename)))
+#tissue <- "GTEx_V8.Brain_Hippocampus"
+#targetGene <- "NDUFS2"
+#tbl.trena.scored <- scoreTargetGeneInTissue(targetGene, "rs4575098", tbl.fimo.ndufs2, tbl.boca, tissue)
+=======
+#tbl.fimo <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.NDUFS2.RData"))
 #tbl.fimo <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.PPOX.RData"))
-tbl.fimo.ppox <- subset(tbl.fimo, start > region.start & end < region.end)
-data.dir <- "~/github/TrenaProjectAD/inst/extdata/genomicRegions"
-filename <- "boca-hg38-consensus-ATAC.RData"
-tbl.boca <- get(load(file.path(data.dir, filename)))
-tissue <- "GTEx_V8.Brain_Hippocampus"
-targetGene <- "NDUFS2"
-tbl.trena.scored <- scoreTargetGeneInTissue(targetGene, "rs4575098", tbl.fimo.ndufs2, tbl.boca, tissue)
+targetGenes <- c("B4GALT3", "FCER1G", "HSPA6", "KLHDC9", "NDUFS2", "NIT1", "PPOX", "TSTD1")
+tissues <- c(#"GTEx_V8.Brain_Cerebellar_Hemisphere",
+             #"GTEx_V8.Brain_Cerebellum",
+             "GTEx_V8.Brain_Cortex",
+             "GTEx_V8.Brain_Hippocampus")
+for(tissue in tissues){
+    for(targetGene in targetGenes){
+        tbl.fimo <- get(load(sprintf("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.%s.RData", targetGene)))
+        data.dir <- "~/github/TrenaProjectAD/inst/extdata/genomicRegions"
+        filename <- "boca-hg38-consensus-ATAC.RData"
+        tbl.boca <- get(load(file.path(data.dir, filename)))
+        tbl.fimo.gene <- subset(tbl.fimo, start > region.start & end < region.end)
+        tbl.trena.scored <- scoreTargetGeneInTissue(targetGene, "rs4575098", tbl.fimo.gene, tbl.boca, tissue)
+        save(tbl.trena.scored, file=sprintf("tbl.trena.scored-%s-%s.RData", targetGene, tissue))
+        printf("------- %30s, %10s: %5.2f", tissue, targetGene,
+               sum(head(tbl.trena.scored$breakage.score, n=20)),na.rm=TRUE)
+        print(head(tbl.trena.scored, n=20))
+        } # for targetGene
+    } # for tissue
