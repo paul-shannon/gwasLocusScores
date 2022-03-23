@@ -63,7 +63,7 @@ GwasLocusScores = R6Class("GwasLocusScores",
          private$start.loc <- start.loc
          private$end.loc <- end.loc
          private$advx <- ADvariantExplorer$new(NULL, chrom, start.loc, end.loc)
-         private$etx <- EndophenotypeExplorer$new(targetGene, "hg38")
+         private$etx <- EndophenotypeExplorer$new(targetGene, "hg38", vcf.project="ADNI")
          private$tissue.name <- tissue.name
          private$eqtl.catalog <- private$advx$geteQTLSummary()
          search.term <- sprintf("^%s$", tissue.name)
@@ -241,6 +241,8 @@ GwasLocusScores = R6Class("GwasLocusScores",
                 sig.beta <- subset(tbl.eqtl.sub, rsid==breaking.snp)$sig.beta
                 tf.rfNorm <- subset(tbl.trena, gene==tf)$rfNorm
                 new.increment <- (pctDelta + sig.beta) * tf.rfNorm
+                #browser()
+                #printf("%20s: %f", breaking.snp, new.increment)
                 tf.breakage.score <- tf.breakage.score + new.increment
                 } # for breaking.snp
             #printf("--- %s: %5.2f", tf, tf.breakage.score)

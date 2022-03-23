@@ -18,7 +18,7 @@ scoreTargetGeneInTissue <- function(targetGene, tag.snp, tbl.fimo, tbl.oc, gtex.
                               tissue.name=gtex.tissue,
                               targetGene=targetGene)
 
-   etx <- EndophenotypeExplorer$new(targetGene, "hg38")
+   etx <- EndophenotypeExplorer$new(targetGene, "hg38", vcf.project="ADNI")
    mtx.rna <- etx$get.rna.matrix(gtex.tissue)
    dim(mtx.rna)
 
@@ -27,7 +27,6 @@ scoreTargetGeneInTissue <- function(targetGene, tag.snp, tbl.fimo, tbl.oc, gtex.
    # filename <- "boca-hg38-consensus-ATAC.RData"
    # tbl.boca <- get(load(file.path(data.dir, filename)))
 
-   browser()
    tbl.tms <- gls$createTrenaMultiScoreTable(tpad,  tbl.fimo, tbl.oc, mtx.rna)
    tbl.tms.strong <- subset(tbl.tms, (chip | oc) & abs(cor.all) > 0.2 & fimo_pvalue < 1e-4)
    tfs <- unique(tbl.tms.strong$tf)
@@ -53,16 +52,20 @@ scoreTargetGeneInTissue <- function(targetGene, tag.snp, tbl.fimo, tbl.oc, gtex.
 
 
   tbl.trena.scored <- gls$scoreEQTLs(tbl.trena, tbl.breaks, tbl.eqtl)
+  browser()
+  filename <- sprintf("scoredInTissue.%s.%s.%s", targetGene, tissue, tag.snp)
+  save(tbl.breaks, tbl.tms, tbl.tms.strong, tfs, tbl.trena, tbl.tms.stronger, tbl.trena.scored,
+       tbl.fimo, tbl.eqtl, file=filename)
   return(tbl.trena.scored)
 
 } # scoreTargetGeneInTissue
 #----------------------------------------------------------------------------------------------------
-tbl.fimo <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.NDUFS2.RData"))
-tbl.fimo <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.PPOX.RData"))
+tbl.fimo.ndufs2 <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.NDUFS2.RData"))
+#tbl.fimo <- get(load("~/github/TrenaProjectAD/prep/bigFimo/from-khaleesi/tbl.fimo.PPOX.RData"))
 tbl.fimo.ppox <- subset(tbl.fimo, start > region.start & end < region.end)
 data.dir <- "~/github/TrenaProjectAD/inst/extdata/genomicRegions"
 filename <- "boca-hg38-consensus-ATAC.RData"
 tbl.boca <- get(load(file.path(data.dir, filename)))
 tissue <- "GTEx_V8.Brain_Hippocampus"
-targetGene <- "PPOX"
-tbl.trena.scored <- scoreTargetGeneInTissue(targetGene, "rs4575098", tbl.fimo.ppox, tbl.boca, tissue)
+targetGene <- "NDUFS2"
+tbl.trena.scored <- scoreTargetGeneInTissue(targetGene, "rs4575098", tbl.fimo.ndufs2, tbl.boca, tissue)

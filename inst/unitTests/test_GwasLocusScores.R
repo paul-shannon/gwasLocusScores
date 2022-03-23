@@ -2,6 +2,11 @@ suppressPackageStartupMessages({
     library(RUnit)
     library(GwasLocusScores)
     })
+
+message(sprintf("--- calling init.snpLocs()"))
+init.snpLocs <- function() x <- EndophenotypeExplorer$new(NA, default.genome="hg19",
+                                                          vcf.project="AMPAD", initialize.snpLocs=TRUE)
+
 #----------------------------------------------------------------------------------------------------
 # these tests are guided by the ADAMTS4 region's tag snp, and haploreg's report
 # of variants in LD with it down to  R^2 >= 0.2,
@@ -101,7 +106,12 @@ test_createTmsTable.runTrena <- function()
     tpad <- TrenaProjectAD()
 
     require(EndophenotypeExplorer)
-    etx <- EndophenotypeExplorer$new(targetGene, "hg38")
+    etx <- EndophenotypeExplorer$new(targetGene,
+                                     default.genome="hg38",
+                                     vcf.project="ADNI",
+                                     verbose=FALSE,
+                                     initialize.snpLocs=TRUE)
+
     mtx.rna <- etx$get.rna.matrix(tissue)
     dim(mtx.rna)
 
