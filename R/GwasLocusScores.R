@@ -97,8 +97,8 @@ GwasLocusScores = R6Class("GwasLocusScores",
          #' @returns a data.frame
       breakMotifsAtEQTLs = function(targetGene, pvalue.cutoff=NA, TFs.preselected=NA){
          printf("--- starting motifbreakR")
-         if(is.null(private$tbl.eqtl))
-             self$load.eqtls()
+         #if(is.null(private$tbl.eqtl))
+         #    self$load.eqtls()
          tbl.sub <- subset(private$tbl.eqtl, gene==targetGene)
          if(!is.na(pvalue.cutoff))
              tbl.sub <- subset(tbl.sub, pvalue <= pvalue.cutoff)
@@ -161,7 +161,7 @@ GwasLocusScores = R6Class("GwasLocusScores",
          #' @returns a data.frame
 
       runTrena = function(tfs, mtx.rna, tbl.tms.final=NA){
-         solvers <- c("lasso", "Ridge", "Spearman", "Pearson", "RandomForest", "xgboost")
+         solvers <- c("lasso", "Ridge", "Spearman", "Pearson", "RandomForest")
          solver <- EnsembleSolver(mtx.rna,
                                   targetGene=private$targetGene,
                                   candidateRegulators=tfs,
