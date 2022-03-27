@@ -38,7 +38,7 @@ assess RNA-binding protein binding sites, their structure and motif matches
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-new}{\code{GwasLocusScores$new()}}
-\item \href{#method-load.eqtls}{\code{GwasLocusScores$load.eqtls()}}
+\item \href{#method-set.eqtls}{\code{GwasLocusScores$set.eqtls()}}
 \item \href{#method-get.tbl.eqtl}{\code{GwasLocusScores$get.tbl.eqtl()}}
 \item \href{#method-breakMotifsAtEQTLs}{\code{GwasLocusScores$breakMotifsAtEQTLs()}}
 \item \href{#method-createTrenaMultiScoreTable}{\code{GwasLocusScores$createTrenaMultiScoreTable()}}
@@ -55,14 +55,7 @@ assess RNA-binding protein binding sites, their structure and motif matches
 \subsection{Method \code{new()}}{
 Creates a new instance of this class.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{GwasLocusScores$new(
-  tag.snp,
-  chrom,
-  start.loc,
-  end.loc,
-  tissue.name,
-  targetGene
-)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{GwasLocusScores$new(tag.snp, chrom, start.loc, end.loc, targetGene)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -76,8 +69,6 @@ Creates a new instance of this class.
 
 \item{\code{end.loc}}{numeric the end of the genomic region of interest}
 
-\item{\code{tissue.name}}{character, e.g. "GTEx_V8.Brain_Hippocampus"}
-
 \item{\code{targetGene}}{character, e.g. "NDUFS2"}
 }
 \if{html}{\out{</div>}}
@@ -87,12 +78,12 @@ an object of the GwasLocusScores class
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-load.eqtls"></a>}}
-\if{latex}{\out{\hypertarget{method-load.eqtls}{}}}
-\subsection{Method \code{load.eqtls()}}{
-retrieves all eQTLs from the ebi eqtl catalogue
+\if{html}{\out{<a id="method-set.eqtls"></a>}}
+\if{latex}{\out{\hypertarget{method-set.eqtls}{}}}
+\subsection{Method \code{set.eqtls()}}{
+specifies the eqtls to be used
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{GwasLocusScores$load.eqtls()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{GwasLocusScores$set.eqtls(tbl.eqtls)}\if{html}{\out{</div>}}
 }
 
 }
@@ -100,7 +91,7 @@ retrieves all eQTLs from the ebi eqtl catalogue
 \if{html}{\out{<a id="method-get.tbl.eqtl"></a>}}
 \if{latex}{\out{\hypertarget{method-get.tbl.eqtl}{}}}
 \subsection{Method \code{get.tbl.eqtl()}}{
-extract all previously obtained eQTLs at or aboce the specified pvalue threshold
+extract all previously obtained eQTLs at or above the specified pvalue threshold
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{GwasLocusScores$get.tbl.eqtl(pvalue.cutoff)}\if{html}{\out{</div>}}
 }

@@ -30,7 +30,6 @@ GwasLocusScores = R6Class("GwasLocusScores",
       chrom=NULL,
       start.loc=NULL,
       end.loc=NULL,
-      tissue.name=NULL,
       advx=NULL,      # ADvariantExplorer
       etx=NULL,        # EndophenotypeExplorer
       tbl.eqtl=NULL,
@@ -51,47 +50,34 @@ GwasLocusScores = R6Class("GwasLocusScores",
          #' @param chrom character, e.g., "chr1"
          #' @param start.loc numeric the start of the genomic region of interest
          #' @param end.loc numeric the end of the genomic region of interest
-         #' @param tissue.name character, e.g. "GTEx_V8.Brain_Hippocampus"
+         # @param tissue.name character shorthand for key to mtx.rna and eqtl lookup
          #' @param targetGene character, e.g. "NDUFS2"
          #' @return an object of the GwasLocusScores class
 
-      initialize = function(tag.snp, chrom, start.loc, end.loc, tissue.name, targetGene){
-         stopifnot(length(tissue.name) == 1)
+      initialize = function(tag.snp, chrom, start.loc, end.loc, targetGene){
          private$targetGene <- targetGene
          private$tag.snp <- tag.snp
          private$chrom <- chrom
          private$start.loc <- start.loc
          private$end.loc <- end.loc
+         #private$tissue.name <- tissue.name
          private$advx <- ADvariantExplorer$new(NULL, chrom, start.loc, end.loc)
          private$etx <- EndophenotypeExplorer$new(targetGene, "hg38", vcf.project="ADNI")
-         private$tissue.name <- tissue.name
          private$eqtl.catalog <- private$advx$geteQTLSummary()
-         search.term <- sprintf("^%s$", tissue.name)
-         if(length(grep(search.term, private$eqtl.catalog$unique_id)) !=1)
-            stop(sprintf("'%s' does not uniquely identify a catalog study", tissue.name))
          },
 
          #--------------------------------------------------------------------------------
          #' @description
-         #' retrieves all eQTLs from the ebi eqtl catalogue
+         #' specifies the eqtls to be used
          #'
          #' @returns nothing
-      load.eqtls = function(){
-          data.dir <- "~/github/gwasLocusScores/inst/extdata/eqtl.downloads"
-          files <- list.files(path=data.dir, pattern="GTEx.*RData")
-          filename <- grep(private$tissue.name, files, value=TRUE)
-          full.path <- file.path(data.dir, filename)
-          #tbl.eqtl <- private$advx$geteQTLsByLocationAndStudyID(private$chrom,
-          #                                                     private$start.loc,
-          #                                                     private$end.loc,
-          #                                                     private$tissue.name,
-          #                                                     method="tabix", simplify=TRUE)
-         private$tbl.eqtl <- get(load(full.path))
+      set.eqtls = function(tbl.eqtls){
+         private$tbl.eqtl <- tbl.eqtls
          },
 
          #--------------------------------------------------------------------------------
          #' @description
-         #' extract all previously obtained eQTLs at or aboce the specified pvalue threshold
+         #' extract all previously obtained eQTLs at or above the specified pvalue threshold
          #'
          #' @param pvalue.cutoff numeric, e.g., 1e-4
          #' @returns a data.frame
@@ -117,7 +103,7 @@ GwasLocusScores = R6Class("GwasLocusScores",
          if(!is.na(pvalue.cutoff))
              tbl.sub <- subset(tbl.sub, pvalue <= pvalue.cutoff)
          rsids <- tbl.sub$rsid
-         motifs.selected <- query(MotifDb, "sapiens", c("jaspar2018", "hocomoco-core-A"))
+         motifs.selected <- query(MotifDb, "sapiens", c("jaspar2022", "hocomoco-core-A"))
          if(!all(is.na(TFs.preselected))){
             motifs.selected <- query(motifs.selected, andStrings="sapiens", orStrings=TFs.preselected)
             }
@@ -219,6 +205,7 @@ GwasLocusScores = R6Class("GwasLocusScores",
          #'
          # @returns data.frame
       scoreEQTLs = function(tbl.trena, tbl.breaks, tbl.eqtl){
+         printf("--- entering GwasLocusScores$scoreEQTLs")
          tfs.oi <- tbl.trena$gene
          tbl.eqtl.sub <- subset(tbl.eqtl, gene==private$targetGene)
          tbl.eqtl.sub$sig.beta <- with(tbl.eqtl.sub, -log10(pvalue) * abs(beta))
@@ -242,11 +229,10 @@ GwasLocusScores = R6Class("GwasLocusScores",
                 sig.beta <- subset(tbl.eqtl.sub, rsid==breaking.snp)$sig.beta
                 tf.rfNorm <- subset(tbl.trena, gene==tf)$rfNorm
                 new.increment <- (pctDelta + sig.beta) * tf.rfNorm
-                #browser()
-                #printf("%20s: %f", breaking.snp, new.increment)
+                # printf("%20s: %f", breaking.snp, new.increment)
                 tf.breakage.score <- tf.breakage.score + new.increment
                 } # for breaking.snp
-            #printf("--- %s: %5.2f", tf, tf.breakage.score)
+            # printf("--- %s: %5.2f", tf, tf.breakage.score)
             breakage.scores[[tf]] <- tf.breakage.score
             } # for tf
 

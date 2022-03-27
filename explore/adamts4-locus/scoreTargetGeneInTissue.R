@@ -52,7 +52,6 @@ scoreTargetGeneInTissue <- function(targetGene, tag.snp, tbl.fimo, tbl.oc, gtex.
 
 
   tbl.trena.scored <- gls$scoreEQTLs(tbl.trena, tbl.breaks, tbl.eqtl)
-  browser()
   filename <- sprintf("scoredInTissue.%s.%s.%s", targetGene, tissue, tag.snp)
   save(tbl.breaks, tbl.tms, tbl.tms.strong, tfs, tbl.trena, tbl.tms.stronger, tbl.trena.scored,
        tbl.fimo, tbl.eqtl, file=filename)

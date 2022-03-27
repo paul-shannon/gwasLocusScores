@@ -8,6 +8,20 @@ init.snpLocs <- function() x <- EndophenotypeExplorer$new(NA, default.genome="hg
                                                           vcf.project="AMPAD", initialize.snpLocs=TRUE)
 
 #----------------------------------------------------------------------------------------------------
+# rather than query eQTLs for testing, just load a batch previously obtained
+file <- system.file(package="GwasLocusScores", "extdata", "eqtl.downloads",
+                    "GTEx_V8.Brain_Hippocampus.chr1:161053000-161269000.RData")
+checkTrue(file.exists(file))
+tbl.eqtls <- get(load(file))
+dim(tbl.eqtls)
+checkEquals(dim(tbl.eqtls), c(29404, 9))
+
+# need small set of rsids to test motifbreakR, offered here by tbl.eqtls.gtex, along with
+# tbl.trena and (unused) tbl.tms, to test scoring of eQTLS wrt regulatory impact
+# tbl.breaks, tbl.trena
+file <- system.file(package="GwasLocusScores", "extdata", "ndufs2.test.data.RData")
+print(load(file))
+#----------------------------------------------------------------------------------------------------
 # these tests are guided by the ADAMTS4 region's tag snp, and haploreg's report
 # of variants in LD with it down to  R^2 >= 0.2,
 tbl.tagHap <- read.table("~/github/ADvariantExplorer/explore/adamts4-study/haploreg-rs4575098-0.2.tsv",
@@ -20,9 +34,10 @@ tag.snp.loc <- 161185602
 runTests <- function()
 {
     test_ctor()
-    test_eqtls()
+    test_set.eqtls()
     test_breakMotifs()
     test_createTmsTable.runTrena()
+    test_scoreEQTLs()
 
 } # runTests
 #----------------------------------------------------------------------------------------------------
@@ -31,36 +46,31 @@ test_ctor <- function()
     message(sprintf("--- test_ctor"))
 
     gls <- GwasLocusScores$new("rs4575096", region.chrom, region.start, region.end,
-                               "GTEx_V8.Brain_Hippocampus", targetGene="NDUFS2")
+                               #"GTEx_V8.Brain_Hippocampus",
+                               targetGene="NDUFS2")
     checkTrue(all(c("GwasLocusScores", "R6") %in% class(gls)))
 
 } # test_ctor
 #----------------------------------------------------------------------------------------------------
-test_eqtls <- function()
+test_set.eqtls <- function()
 {
-
-    checkException(
-        gls <- GwasLocusScores$new("rs4575096", region.chrom, region.start, region.end,
-                                   tissue.name="intentional.error", targetGene="NDUFS2"),
-        silent=TRUE
-        )
-
+    message(sprintf("--- test_set.eqtls"))
 
     gls <- GwasLocusScores$new("rs4575096", region.chrom, region.start, region.end,
-                               tissue.name="GTEx_V8.Brain_Hippocampus", targetGene="NDUFS2")
+                               targetGene="NDUFS2")
 
-    gls$load.eqtls()
-    tbl.eqtl <- gls$get.tbl.eqtl(5e-4)
-    checkTrue(nrow(tbl.eqtl) > 100)
-    checkTrue(nrow(tbl.eqtl) < 200)
+    gls$set.eqtls(tbl.eqtls)
+    tbl.sub <- gls$get.tbl.eqtl(5e-4)
+    checkTrue(nrow(tbl.sub) > 100)
+    checkTrue(nrow(tbl.sub) < 200)
     # checkEquals(colnames(tbl.eqtl), c("rsid", "pvalue", "gene", "total.alleles", "beta", "id"))
     checkEquals(colnames(tbl.eqtl),
                 c("chrom", "pos", "ref", "alt", "rsid", "pvalue", "beta", "gene", "ensg"))
-    gene.count <- length(unique(tbl.eqtl$gene))
+    gene.count <- length(unique(tbl.sub$gene))
     checkTrue(gene.count > 10 & gene.count < 20)  # 14 on 30 dec 2021)
 
-    tbl.eqtl <- gls$get.tbl.eqtl(1e-5)
-    checkTrue(nrow(tbl.eqtl) > 30 & nrow(tbl.eqtl) <= 40) # 39 on 28 dec 2021
+    tbl.sub2 <- gls$get.tbl.eqtl(1e-5)
+    checkTrue(nrow(tbl.sub2) > 30 & nrow(tbl.sub2) <= 40) # 39 on 28 dec 2021
 
 } # test_eqtls
 #----------------------------------------------------------------------------------------------------
@@ -69,18 +79,17 @@ test_breakMotifs <- function()
     message(sprintf("--- test_breakMotifs"))
 
     gls <- GwasLocusScores$new("rs4575096", region.chrom, region.start, region.end,
-                               tissue.name="GTEx_V8.Brain_Hippocampus",
+                               #tissue.name="GTEx_V8.Brain_Hippocampus",
                                targetGene="NDUFS2")
 
-    gls$load.eqtls()
+    gls$set.eqtls(tbl.eqtls)
     tbl.eqtl <- gls$get.tbl.eqtl(pvalue.cutoff=1)
     dim(tbl.eqtl)
     targetGene <- "NDUFS2"
     pval.cutoff <- 1.22e-5
     tbl.sub <- subset(tbl.eqtl, pvalue <= pval.cutoff & gene==targetGene)
     snps <- unique(tbl.sub$rsid)
-    dim(tbl.sub)
-    checkTrue(nrow(tbl.sub) > 2)
+    checkEquals(dim(tbl.sub), c(3, 9))
 
     tfs.oi.for.speed <- c("SOX21", "ZEB1")  # rather than the full > 500 from MotifDb
     x <- system.time(tbl.breaks <- gls$breakMotifsAtEQTLs(targetGene, pval.cutoff,
@@ -98,9 +107,8 @@ test_createTmsTable.runTrena <- function()
     message(sprintf("--- test_createTmsTable.runTrena"))
 
     targetGene <- "NDUFS2"
-    tissue <- "GTEx_V8.Brain_Hippocampus"
     gls <- GwasLocusScores$new("rs4575096", region.chrom, region.start, region.end,
-                               tissue.name=tissue,
+                               #tissue.name=tissue,
                                targetGene=targetGene)
     require(TrenaProjectAD)
     tpad <- TrenaProjectAD()
@@ -112,10 +120,13 @@ test_createTmsTable.runTrena <- function()
                                      verbose=FALSE,
                                      initialize.snpLocs=TRUE)
 
+    tissue <- "GTEx_V8.Brain_Hippocampus"
     mtx.rna <- etx$get.rna.matrix(tissue)
-    dim(mtx.rna)
+    checkEquals(dim(mtx.rna), c(24393, 165))
 
-    tbl.fimo.small <- get(load("~/github/gwasLocusScores/inst/extdata/tbl.fimo.ndufs2.small.RData"))
+    file <- system.file(package="GwasLocusScores", "extdata", "tbl.fimo.ndufs2.small.RData")
+    checkTrue(file.exists(file))
+    tbl.fimo.small <- get(load(file))
     data.dir <- "~/github/TrenaProjectAD/inst/extdata/genomicRegions"
     filename <- "boca-hg38-consensus-ATAC.RData"
     tbl.boca <- get(load(file.path(data.dir, filename)))
@@ -128,20 +139,22 @@ test_createTmsTable.runTrena <- function()
     tbl.trena <- gls$runTrena(tfs, mtx.rna, tbl.tms.strong)
     tbl.trena$rfNorm <- tbl.trena$rfScore / max(tbl.trena$rfScore)
     dim(tbl.tms.strong)
-    top.tfs <- tbl.trena$gene [1:20]
+    top.tfs <- tbl.trena$gene [1:10]
     tbl.tms.stronger <- subset(tbl.tms.strong, tf %in% top.tfs)
     dim(tbl.tms.stronger)
     tbl.breaks <- get(load("tbl.breaks.fromTest.RData"))
 
-    tbl.eqtl <- gls$get.tbl.eqtl(1e-4)
-    if(is.null(tbl.eqtl)){
-       gls$load.eqtls()
-       tbl.eqtl <- gls$get.tbl.eqtl(1e-4)
-       }
+    #tbl.eqtl <- gls$get.tbl.eqtl(1e-4)
+    #if(is.null(tbl.eqtl)){
+    #   gls$load.eqtls()
+    #   tbl.eqtl <- gls$get.tbl.eqtl(1e-4)
+    #   }
 
-    tbl.trena.scored <- gls$scoreEQTLs(tbl.trena, tbl.breaks, tbl.eqtl)
-    printf("--- summed breakage: %5.2f", sum(tbl.trena.scored$breakage.score))
-    head(tbl.trena.scored, n=10)
+    #save(tbl.trena, tbl.breaks, tbl.eqtls, file="../extdata/fullTestDataForScoreEQTLS.RData")
+    tbl.trena.scored <- gls$scoreEQTLs(tbl.trena, tbl.breaks, tbl.eqtls)
+    # browser()
+    checkTrue(sum(tbl.trena.scored$breakage.score) > 20)
+    #head(tbl.trena.scored, n=10)
     viz <- FALSE
     if(viz){
         igv <- start.igv("NDUFS2", "hg38")
@@ -188,46 +201,22 @@ test_createTmsTable.runTrena <- function()
 
 } # test_createTmsTable.runTrena
 #----------------------------------------------------------------------------------------------------
-scoreEQTLs = function(tbl.trena, tbl.breaks, tbl.eqtl)
+test_scoreEQTLs = function()
 {
-    tfs.oi <- tbl.trena$gene
-    tbl.eqtl.sub <- subset(tbl.eqtl, gene==targetGene)
+    message(sprintf("--- test_scoreEQTLs"))
 
-    tbl.eqtl.sub$sig.beta <- with(tbl.eqtl.sub, -log10(pvalue) * abs(beta))
+    gls <- GwasLocusScores$new("rs4575096", region.chrom, region.start, region.end,
+                               targetGene="NDUFS2")
 
-       # for each tf:
-       #   calculate a trena score, the rfNorm
-       #   for every broken tfbs for this tf
-       #      get the snps abs(pctDelta)
-       #      multiply it by the eqtls sig.beta
-       #      add it to the tf's breakage score
+    file <- system.file(package="GwasLocusScores", "extdata", "fullTestDataForScoreEQTLS.RData")
+    checkTrue(file.exists(file))
 
-    breakage.scores <- list()
-    for(tf in tfs.oi){
-       tbl.tf.breaks.sub <- subset(tbl.breaks, geneSymbol == tf & SNP_id %in% tbl.eqtl$rsid)
-       dups <- which(duplicated(tbl.tf.breaks.sub[, c("SNP_id", "geneSymbol")]))
-       if(length(dups) > 0)
-           tbl.tf.breaks.sub <- tbl.tf.breaks.sub[-dups,]
-       tf.breakage.score <- 0
-       for(breaking.snp in tbl.tf.breaks.sub$SNP_id){
-          pctDelta <- abs(subset(tbl.tf.breaks.sub, SNP_id==breaking.snp)$pctDelta)
-            # multiply this by the tf's rfNorm and the eQTLs sig.beta
-          sig.beta <- subset(tbl.eqtl.sub, rsid==breaking.snp)$sig.beta
-          tf.rfNorm <- subset(tbl.trena, gene==tf)$rfNorm
-          new.increment <- (pctDelta + sig.beta) * tf.rfNorm
-          tf.breakage.score <- tf.breakage.score + new.increment
-          } # for breaking.snp
-       printf("--- %s: %5.2f", tf, tf.breakage.score)
-       breakage.scores[[tf]] <- tf.breakage.score
-       } # for tf
+    load(file)
 
-    tbl.trena$breakage.score <- as.numeric(breakage.scores)
-    tbl.trena$rfNorm <- round(tbl.trena$rfNorm, digits=2)
-    tbl.trena$breakage.score <- round(tbl.trena$breakage.score, digits=2)
+    tbl.scored <- gls$scoreEQTLs(tbl.trena, tbl.breaks, tbl.eqtls)
+    checkTrue(sum(tbl.scored$breakage.score) > 27)
 
-    return(tbl.trena)
-
-} # scoreEQTLs
+} # test_scoreEQTLs
 #----------------------------------------------------------------------------------------------------
 if(!interactive())
     runTests()
